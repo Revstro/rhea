@@ -18,4 +18,12 @@ client.on('ready', ()=>{
 	console.log('Rhea is online...')
 })
 
+client.on('message', msg =>{
+	let args = msg.content.substring(PREFIX.length).split(' ');
+
+	if(msg.content.subustring(0, 1) === '!') {
+		Commands.cmd(msg, args);
+	}
+})
+
 client.login(token);
