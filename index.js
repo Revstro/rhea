@@ -1,5 +1,6 @@
 const Discord = require('discord.js');
 const Settings = require('./private/settings.json');
+const Commands = require('./src/Commands.js');
 
 const client = new Discord.Client();
 const token = Settings.token;
@@ -21,7 +22,7 @@ client.on('ready', ()=>{
 client.on('message', msg =>{
 	let args = msg.content.substring(PREFIX.length).split(' ');
 
-	if(msg.content.subustring(0, 1) === '!') {
+	if(msg.content.substring(0, 1) === '!') {
 		Commands.cmd(msg, args);
 	}
 })
