@@ -35,7 +35,28 @@ this.cmd = function(msg, args) {
 			msg.channel.send(embed);
 			break;
 
+		// !maps
+		case 'maps':
+			RedisManager.getMaps(msg);
+			break;
+
 		// Time Trial Commands
+		// !leaderboard [map name] [start] [end]
+		case 'leaderboard':
+			if(args.length === 4) {
+				RedisManager.getTimeTrialRecords(args[1], args[2]-1, args[3]-1, msg);
+			}
+			else if(args.length === 2) {
+				RedisManager.getTimeTrialRecords(args[1], 0, 10, msg);
+			}
+			else {
+				embed.setTitle('Error');
+				embed.setDescription(`Sorry ${msg.member}, but you are missing arguments\nUsage: \`!leaderboard [map] [start (default is 1)] [end (default is 10)]\``);
+				embed.setColor('D43E33');
+				msg.channel.send(embed);
+			}
+			break;
+
 		// !submit [map name] [video link]
 		case 'submit':
 			if(args.length === 3) {
@@ -71,6 +92,58 @@ this.cmd = function(msg, args) {
 				embed.setDescription(`Testing the Redis database (check logs)`);
 				embed.setColor('00E3FF');
 				msg.channel.send(embed);
+			}
+			else {
+				embed.setTitle('Error');
+				embed.setDescription(`Sorry ${msg.member}, but you aren't permitted to use this command`);
+				embed.setColor('D43E33');
+				msg.channel.send(embed);
+			}
+			break;
+
+		// !addmap [map] [author]
+		case 'addmap':
+			if(msg.member.roles.cache.has(Settings.role_administrator)) {
+				if(args.length === 3) {
+					RedisManager.newMap(args[1], args[2]);
+
+					embed.setTitle('Added Map');
+					embed.setDescription(`Added ${args[1]} by ${args[2]}`);
+					embed.setColor('00E3FF');
+					msg.channel.send(embed);
+				}
+				else {
+					embed.setTitle('Error');
+					embed.setDescription(`Sorry ${msg.member}, but you are missing some arguments\nUsage:\`!addmap [map] [author]\``);
+					embed.setColor('D43E33');
+					msg.channel.send(embed);
+				}
+			}
+			else {
+				embed.setTitle('Error');
+				embed.setDescription(`Sorry ${msg.member}, but you aren't permitted to use this command`);
+				embed.setColor('D43E33');
+				msg.channel.send(embed);
+			}
+			break;
+
+		// !addrecord [name] [map] [total time] [video]
+		case 'addrecord':
+			if(msg.member.roles.cache.has(Settings.role_administrator)) {
+				if(args.length === 5) {
+					RedisManager.newTimeTrialRecord(args[1], args[3], args[2], args[4], msg);
+
+					embed.setTitle('Time Trial Record');
+					embed.setDescription(`Added time trial record`);
+					embed.setColor('00E3FF');
+					msg.channel.send(embed);
+				}
+				else {
+					embed.setTitle('Error');
+					embed.setDescription(`Sorry ${msg.member}, but you are missing some arguments\nUsage\`!addrecord [name] [map] [total time] [video]\``);
+					embed.setColor('D43E33');
+					msg.channel.send(embed);
+				}
 			}
 			else {
 				embed.setTitle('Error');
