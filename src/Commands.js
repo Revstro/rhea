@@ -22,7 +22,7 @@ this.cmd = function(msg, args) {
 		// Normal Commands
 		// !season
 		case 'season':
-			
+			RedisManager.getSeason(msg);
 			break;
 
 		// !github
@@ -200,18 +200,18 @@ this.cmd = function(msg, args) {
 			}
 			break;
 
-		// !addstats [handle] [place/# of participants] [map]
+		// !addstats [handle] [place] [participants] [map]
 		// Adds a race record to the database
 		case 'addstats':
 			if(msg.member.roles.cache.has(Settings.role_administrator)) {
-				if(args.length === 4) {
-					
+				if(args.length === 5) {
+					let handle = msg.mentions.members.first();
 
-					RedisManager.addStats()
+					RedisManager.addStats(handle, args[2], args[3], args[4], msg);
 				}
 				else {
 					embed.setTitle('Error');
-					embed.setDescription(`Sorry ${msg.member}, but you are missing some arguments\nUsage\`!addstats [discord handle] [place/# of participants] [map]\``);
+					embed.setDescription(`Sorry ${msg.member}, but you are missing some arguments\nUsage\`!addstats [discord handle] [place] [participants] [map]\``);
 					embed.setColor('D43E33');
 					msg.channel.send(embed);
 				}
