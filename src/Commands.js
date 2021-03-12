@@ -46,12 +46,65 @@ this.cmd = function(msg, args) {
 			break;
 
 		// Race Record Commands
+		// !history [handle] [season] [start] [end]
+		case 'history':
+			if(args.length === 5) {
+				let member = msg.mentions.members.first();
+
+				RedisManager.getRaceHistory(member, args[2], parseInt(args[3]) - 1, parseInt(args[4]) - 1, msg);
+			}
+			else if(args.length === 3) {
+				let member = msg.mentions.members.first();
+
+				RedisManager.getRaceHistory(member, args[2], 0, 9, msg);
+			}
+			else if(args.length === 2) {
+				let member = msg.mentions.members.first();
+
+				RedisManager.getRaceHistory(member, 'UseCurrent', 0, 9, msg);
+			}
+			else if(args.length === 1) {
+				RedisManager.getRaceHistory(msg.member, 'UseCurrent', 0, 9, msg);
+			}
+			else {
+				embed.setTitle('Error');
+                                embed.setDescription(`Sorry ${msg.member}, but you are missing arguments\nUsage: \`!history [handle] [season (default is the current season)] [start (default is 1)] [end (default is 10)]\``);
+                                embed.setColor('D43E33');
+                                msg.channel.send(embed);
+			}
+			break;
+
+		// !simulate [place] [participants]
+		case 'simulate':
+			if(args.length === 3) {
+				RedisManager.getSimulation(msg.member, args[1], args[2], msg);
+			}
+			else {
+				embed.setTitle(`Error`);
+				embed.setDescription(`Sorry ${msg.member}, but you are missing arguments\nUsage: \`!simulate [place] [participants]\``);
+				embed.setColor(`D43E33`);
+				msg.channel.send(embed);
+			}
+			break;
+
 		// !standings
 		case 'standings':
 			break;
 
-		// !stats [handle]
+		// !stats [handle] [season]
 		case 'stats':
+			if(args.length === 3) {
+
+			}
+			else if(args.length === 2) {
+
+			}
+			else {
+				embed.setTitle('Error');
+                                embed.setDescription(`Sorry ${msg.member}, but you are missing arguments\nUsage: \`!stats [handle] [season (default is the current season)]\``);
+                                embed.setColor('D43E33');
+                                msg.channel.send(embed);
+			}
 			break;
 
 		// Time Trial Commands
@@ -61,7 +114,7 @@ this.cmd = function(msg, args) {
 				RedisManager.getTimeTrialRecords(args[1], args[2]-1, args[3]-1, msg);
 			}
 			else if(args.length === 2) {
-				RedisManager.getTimeTrialRecords(args[1], 0, 10, msg);
+				RedisManager.getTimeTrialRecords(args[1], 0, 9, msg);
 			}
 			else {
 				embed.setTitle('Error');

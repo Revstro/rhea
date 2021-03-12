@@ -11,7 +11,9 @@ const ranks = [Settings.role_rankSilv, Settings.role_rankGold, Settings.role_ran
  * @returns {number} The calculated rank percentage
 */
 this.calculateRank = function(place, participants, ptsTot, ptsObt) {
-	ptsTot = ptsTot + ((participants - place) + 1);
+	if(parseInt(place) !== 0) {
+		ptsTot = ptsTot + ((participants - place) + 1);
+	}
 	console.log(ptsTot);
 	ptsObt = parseInt(ptsObt) + parseInt(participants);
 	console.log(ptsObt);
@@ -42,6 +44,7 @@ this.updateRank = function(member, newRank) {
 				}
 			}
 			member.roles.add(member.guild.roles.cache.get(ranks[0]));
+			console.log(`${member.displayName} is now ranked in SILVER`);
 		}
 	}
 	else if(newRank >= 50 && newRank < 70) {						// Gold
@@ -55,6 +58,7 @@ this.updateRank = function(member, newRank) {
 				}
 			}
 			member.roles.add(member.guild.roles.cache.get(ranks[1]));
+			console.log(`${member.displayName} is now ranked in GOLD`);
 		}
 	}
 	else if(newRank >= 70 && newRank < 90) {						// Platinum
@@ -68,6 +72,7 @@ this.updateRank = function(member, newRank) {
 				}
 			}
 			member.roles.add(member.guild.roles.cache.get(ranks[2]));
+			console.log(`${member.displayName} is now ranked in PLATINUM`);
 		}
 	}
 	else if(newRank >= 90 && newRank < 98) {						// Diamond
@@ -81,6 +86,7 @@ this.updateRank = function(member, newRank) {
 				}
 			}
 			member.roles.add(member.guild.roles.cache.get(ranks[3]));
+			console.log(`${member.displayName} is now ranked in DIAMOND`);
 		}
 	}
 	else if(newRank >= 98 && newRank <= 100) {						// Grandmaster
@@ -94,6 +100,7 @@ this.updateRank = function(member, newRank) {
 				}
 			}
 			member.roles.add(member.guild.roles.cache.get(ranks[4]));
+			console.log(`${member.displayName} is now ranked in GRANDMASTER`);
 		}
 	}
 	else {
