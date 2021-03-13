@@ -144,12 +144,16 @@ this.addStats = function(handle, place, participants, map, msgObj) {
 						redis.set(`${handle.id}-${season}:max-points`, (ptsMax + parseInt(participants)));
 
 						// Check if the player finished in first place
-						if(place === 1) {
+						if(parseInt(place) === 1) {
 							redis.set(`${handle.id}-${season}:races-won`, (racesWon + 1));
 						}
 
 						// Update the player's rank
 						RankManager.updateRank(handle, newRank);
+
+						// Update the player's standing in the season
+						redis.zrem(`standings-${season}`, `${handle.id}`);
+						redis.zadd(`standings-${season}`, newRank, `${handle.id}`);
 
 						// Get the date
 						let cDate = new Date();
@@ -189,7 +193,109 @@ this.addStats = function(handle, place, participants, map, msgObj) {
 	return 0;
 }
 
-this.getPlayerStats = function() {
+/** Gets the stats of the player
+ * @param {Discord.GuildMember} handle The discord member
+ * @param {number} season The season requested (use "UseCurrent" to get the current season)
+ * @param {Discord.Message} msgObj Discord message object
+ * @returns {number} Error status of the function. 1 = Error, 0 = No Error
+*/
+this.getPlayerStats = function(handle, season, msgObj) {
+	//let ptsTotal;
+	//let ptsMax;
+	//let racesWon;
+	//let season;
+	//let seasonRank;
+
+	if(season === `UseCurrent`) {
+		redis.get(`season`).then(function(result0) {
+			if(result0 !== null) {
+				//season = result0;
+
+				redis.get(`${handle.id}-${result0}:total-points`).then(function(result1) {
+					if(result1 !== null) {
+						//ptsTotal = parseInt(result1);
+
+						redis.get(`${handle.id}-${result0}:max-points`).then(function(result2) {
+							//ptsMax = parseInt(result2);
+
+							redis.get(`${handle.id}-${result0}:races-won`).then(function(result3) {
+								//racesWon = parseInt(result3);
+
+								redis.zrevrank(`standings-${result0}`, `${handle.id}`).then(function(result4) {
+									//seasonRank = parseInt(result4) + 1;
+
+									redis.lrange(`${handle.id}-${result0}:race-history`, 0, 4).then(function(result5) {
+										let raceHistory = result5[0]
+										for(i = 1; i < result5.length; i++) {
+											raceHistory = `${raceHistory}\n${result5[i]}`
+										}
+
+										console.log(`Stats obtained for ${handle.displayName}:`);
+										console.log(`Rank in current season: ${parseInt(result4) + 1}`);
+										console.log(`Rank %: ${result1}/${result2}`);
+										console.log(`Races won: ${result3}`);
+										console.log(`Recent games:\n${raceHistory}`);
+
+										ReplyManager.newReply(`Stats for ${handle.displayName}`, `Standing in current season: **#${parseInt(result4) + 1}**\n\nRank %: **${result1}/${result2} (${(parseInt(result1)/parseInt(result2))*100})**\nRaces won: **${result3}**\n\nRecent games:\n${raceHistory}`, msgObj, `1D00FC`);
+									});
+								});
+							});
+						});
+					}
+					else {
+						console.log(`ERROR: ${handle.displayName} does not have any stats for season ${season}`);
+						ReplyManager.newReply(`Error`, `Sorry ${msgObj.member}, but ${handle} does not have any stats in the current season`, msgObj, `D43E33`);
+						return 1;
+					}
+				});
+			}
+			else {
+				console.log(`ERROR: Unable to obtain season`);
+				ReplyManager.newReply(`Error`, `Sorry ${msgObj.member}, but there was an exception:\n\`Unable to obtain season\``, msgObj, 'D43E33');
+				return 1;
+			}
+		});
+	}
+	else {
+		redis.get(`${handle.id}-${season}:total-points`).then(function(result1) {
+			if(result1 !== null) {
+				//ptsTotal = parseInt(result1);
+
+				redis.get(`${handle.id}-${season}:max-points`).then(function(result2) {
+					//ptsMax = parseInt(result2);
+
+					redis.get(`${handle.id}-${season}:races-won`).then(function(result3) {
+						//racesWon = parseInt(result3);
+
+						redis.zrevrank(`standings-${season}`, `${handle.id}`).then(function(result4) {
+							//seasonRank = parseInt(result4) + 1;
+
+							redis.lrange(`${handle.id}-${season}:race-history`, 0, 4).then(function(result5) {
+								let raceHistory = result5[0]
+								for(i = 1; i < result5.length; i++) {
+									raceHistory = `${raceHistory}\n${result5[i]}`
+								}
+								console.log(`Stats obtained for ${handle.displayName}:`);
+								console.log(`Rank in season ${season}: ${parseInt(result4) + 1}`);
+								console.log(`Rank %: ${result1}/${result2}`);
+								console.log(`Races won: ${result3}`);
+								console.log(`Recent games:\n${raceHistory}`);
+
+								ReplyManager.newReply(`Stats for ${handle.displayName}`, `Standing in season ${season}: **#${parseInt(result4) + 1}**\n\nRank %: **${result1}/${result2} (${(parseInt(result1)/parseInt(result2))*100})**\nRaces won: **${result3}**\n\nRecent games:\n${raceHistory}`, msgObj, `1D00FC`);
+							});
+						});
+					});
+				});
+			}
+			else {
+				console.log(`ERROR: ${handle.displayName} does not have any stats for season ${season}`);
+				ReplyManager.newReply(`Error`, `Sorry ${msgObj.member}, but ${handle} does not have any stats for season **${season}**`, msgObj, `D43E33`);
+				return 1;
+			}
+		});
+
+	}
+	return 0;
 }
 
 /** Gets the race history of the player
@@ -197,7 +303,7 @@ this.getPlayerStats = function() {
  * @param {number} season The season requested (use "UseCurrent" to get the current season)
  * @param {number} start The start of the list
  * @param {number} end The end of the list
- * @param {Discord.Message} Discord message object
+ * @param {Discord.Message} msgObj Discord message object
  * @returns {number} Error status of the function. 1 = Error, 0 = No Error
 */
 this.getRaceHistory = function(handle, season, start, end, msgObj) {
@@ -254,16 +360,68 @@ this.getRaceHistory = function(handle, season, start, end, msgObj) {
 
 	return 0;
 }
+/** Gets the standings of the season
+ * @param {*} season The specified season
+ * @param {number} start The start of the list
+ * @param {number} end The end of the list
+ * @param {Discord.Message} msgObj Discord message object
+ * @returns {number} Error status of the function. 1 = Error, 0 = No Error
+*/
+this.getStandings = function(season, start, end, msgObj) {
+	if(season === "UseCurrent") {
+		redis.get('season').then(function(result0) {
+			if(result0 !== null) {
+				redis.zrange(`standings-${result0}`, start, end).then(function(result) {
+					if(result.length > 0) {
+						let standlist = `1) <@!${result[0]}>`;
+						for(i = 1; i < result.length; i++) {
+							standlist = `${standlist}\n${i + 1}) <@!${result[i]}>`;
+						}
 
-this.getTopStats = function(season, msgObj) {
+						console.log(`List created:\n${standlist}`);
+						ReplyManager.newReply(`Standings`, `Top ${parseInt(end) + 1} of season ${season}\n${standlist}`, msgObj, `1D00FC`);
+					}
+					else {
+						console.log(`ERROR: No standings for season ${season}`);
+						ReplyManager.newReply(`Error`, `Sorry ${msgObj.member}, but I could not find any standings in the current season`, msgObj, 'D43E33');
+						return 1;
+					}
+				});
+			}
+			else {
+				console.log(`ERROR: Unable to obtain season`);
+				ReplyManager.newReply(`Error`, `Sorry ${msgObj.member}, but there was an exception:\n\`Unable to obtain season\``, msgObj, 'D43E33');
+				return 1;
+			}
+		});
+	}
+	else {
+		redis.zrange(`standings-${season}`, start, end).then(function(result) {
+			if(result.length > 0) {
+				let standlist = `1) <@!${result[0]}>`;
+				for(i = 1; i < result.length; i++) {
+					standlist = `${standlist}\n${i + 1}) <@!${result[i]}>`;
+				}
 
+				console.log(`List created:\n${standlist}`);
+				ReplyManager.newReply(`Standings`, `Top ${parseInt(end) + 1} of season ${season}\n${standlist}`, msgObj, `1D00FC`);
+			}
+			else {
+				console.log(`ERROR: No standings for season ${season}`);
+				ReplyManager.newReply(`Error`, `Sorry ${msgObj.member}, but I could not find any standings for that season`, msgObj, 'D43E33');
+				return 1;
+			}
+		});
+	}
+
+	return 0;
 }
 
 /** Adds new stats to a player
  * @param {Discord.GuildMember} handle The discord member
  * @param {number} place The final placing
  * @param {number} participants The number of participants in the race
- * @param {Discord.Message} Discord message object
+ * @param {Discord.Message} msgObj Discord message object
  * @returns {number} Error status of the function. 1 = Error, 0 = No Error
 */
 this.getSimulation = function(handle, place, participants, msgObj) {
@@ -273,10 +431,10 @@ this.getSimulation = function(handle, place, participants, msgObj) {
 
 	console.log(`ID of the player: ${handle.id}`);
 
-	// Before we do anything else, we need to check the value of place
-	if(place < 0) {
-		console.log(`ERROR: invalid place: ${place}`);
-		ReplyManager.newReply(`Error`, `Sorry ${msgObj.member}, but there was an exception:\n\`Invalid place\``, msgObj, 'D43E33');
+	// Before we do anything else, we need to check the value of place and value of participants
+	if(parseInt(place) < 0 || parseInt(participants) < 8 || parseInt(place) > parseInt(participants)) {
+		console.log(`ERROR: Invalid simulation: ${place}`);
+		ReplyManager.newReply(`Error`, `Sorry ${msgObj.member}, but there was an exception:\n\`Invalid simulation (requirements: place <= participants, place > 0, participants > 7)\``, msgObj, 'D43E33');
 		return 1;
 	}
 
@@ -309,23 +467,23 @@ this.getSimulation = function(handle, place, participants, msgObj) {
 						switch(parseInt(place)) {
 							case 0:
 								console.log(`With ${ptsTotal} ChP and ${ptsMax} ChP obtainable, and ${handle.displayName} does not finish a race with ${participants} players, their new rank percentage will be ${newRank}`);
-								ReplyManager.newReply(`Simulation`, `With **${ptsTotal} total ChP** and **${ptsMax} obtainable ChP**, and you do not finish a race with **${participants} players**, you will have **${newPtsTotal} total ChP** and **${newPtsMax} obtainable ChP**, with a new rank percentage **${newRank}**`, msgObj, `1D00FC`);
+								ReplyManager.newReply(`Simulation`, `With **${ptsTotal} total ChP** and **${ptsMax} obtainable ChP**, and you do not finish a race with **${participants} players**, you will have **${newPtsTotal} total ChP** and **${newPtsMax} obtainable ChP**, with a new rank percentage of **${newRank}**`, msgObj, `1D00FC`);
 								break;
 							case 1:
 								console.log(`With ${ptsTotal} ChP and ${ptsMax} ChP obtainable, and ${handle.displayName} finishes in 1st out of ${participants} players, their new rank percentage will be ${newRank}`);
-								ReplyManager.newReply(`Simulation`, `With **${ptsTotal} total ChP** and **${ptsMax} obtainable ChP**, and you finish in **1st** out of **${participants} players**, you will have **${newPtsTotal} total ChP** and **${newPtsMax} obtainable ChP**, with a new rank percentage **${newRank}**`, msgObj, `1D00FC`);
+								ReplyManager.newReply(`Simulation`, `With **${ptsTotal} total ChP** and **${ptsMax} obtainable ChP**, and you finish in **1st** out of **${participants} players**, you will have **${newPtsTotal} total ChP** and **${newPtsMax} obtainable ChP**, with a new rank percentage of **${newRank}**`, msgObj, `1D00FC`);
 								break;
 							case 2:
 								console.log(`With ${ptsTotal} ChP and ${ptsMax} ChP obtainable, and ${handle.displayName} finishes in 2nd out of ${participants} players, their new rank percentage will be ${newRank}`);
-								ReplyManager.newReply(`Simulation`, `With **${ptsTotal} total ChP** and **${ptsMax} obtainable ChP**, and you finish in **2nd** out of **${participants} players**, you will have **${newPtsTotal} total ChP** and **${newPtsMax} obtainable ChP**, with a new rank percentage **${newRank}**`, msgObj, `1D00FC`);
+								ReplyManager.newReply(`Simulation`, `With **${ptsTotal} total ChP** and **${ptsMax} obtainable ChP**, and you finish in **2nd** out of **${participants} players**, you will have **${newPtsTotal} total ChP** and **${newPtsMax} obtainable ChP**, with a new rank percentage of **${newRank}**`, msgObj, `1D00FC`);
 								break;
 							case 3:
 								console.log(`With ${ptsTotal} ChP and ${ptsMax} ChP obtainable, and ${handle.displayName} finishes in 3rd out of ${participants} players, their new rank percentage will be ${newRank}`);
-								ReplyManager.newReply(`Simulation`, `With **${ptsTotal} total ChP** and **${ptsMax} obtainable ChP**, and you finish in **3rd** out of **${participants} players**, you will have **${newPtsTotal} total ChP** and **${newPtsMax} obtainable ChP**, with a new rank percentage **${newRank}**`, msgObj, `1D00FC`);
+								ReplyManager.newReply(`Simulation`, `With **${ptsTotal} total ChP** and **${ptsMax} obtainable ChP**, and you finish in **3rd** out of **${participants} players**, you will have **${newPtsTotal} total ChP** and **${newPtsMax} obtainable ChP**, with a new rank percentage of **${newRank}**`, msgObj, `1D00FC`);
 								break;
 							default:
 								console.log(`With ${ptsTotal} ChP and ${ptsMax} ChP obtainable, and ${handle.displayName} finishes in ${place}th out of ${participants} players, their new rank percentage will be ${newRank}`);
-								ReplyManager.newReply(`Simulation`, `With **${ptsTotal} total ChP** and **${ptsMax} obtainable ChP**, and you finish in **${place}th** out of **${participants} players**, you will have **${newPtsTotal} total ChP** and **${newPtsMax} obtainable ChP**, with a new rank percentage **${newRank}**`, msgObj, `1D00FC`);
+								ReplyManager.newReply(`Simulation`, `With **${ptsTotal} total ChP** and **${ptsMax} obtainable ChP**, and you finish in **${place}th** out of **${participants} players**, you will have **${newPtsTotal} total ChP** and **${newPtsMax} obtainable ChP**, with a new rank percentage of **${newRank}**`, msgObj, `1D00FC`);
 								break;
 						}
 					});
@@ -337,26 +495,31 @@ this.getSimulation = function(handle, place, participants, msgObj) {
 					console.log(`Passing to RankManager: ${place}, ${participants}, ${ptsTotal}, ${ptsMax}`);
 					let newRank = RankManager.calculateRank(place, participants, ptsTotal, ptsMax);
 
+					ptsMax = parseInt(participants);
+					if(parseInt(place) !== 0) {
+						ptsTotal = (ptsMax - parseInt(place)) + 1;
+					}
+
 					switch(parseInt(place)) {
 						case 0:
 							console.log(`With no previous records, and ${handle.displayName} does not finish a race with ${participants} players, their new rank percentage will be ${newRank}`);
-							ReplyManager.newReply(`Simulation`, `With no previous records, and you **do not finish** a race with **${participants} players**, your new rank percentage will be **${newRank}**`, msgObj, `1D00FC`, msgObj, `1D00FC`);
+							ReplyManager.newReply(`Simulation`, `With no previous records, and you **do not finish** a race with **${participants} players**, you will have **${ptsTotal} total ChP** and **${ptsMax} obtainable ChP**, with a new rank percentage of **${newRank}**`, msgObj, `1D00FC`);
 							break;
 						case 1:
 							console.log(`With no previous records, and ${handle.displayName} finishes in 1st out of ${participants} players, their new rank percentage will be ${newRank}`);
-							ReplyManager.newReply(`Simulation`, `With no previous records, and you finish in **1st** out of **${participants} players**, your new rank percentage will be **${newRank}**`, msgObj, `1D00FC`);
+							ReplyManager.newReply(`Simulation`, `With no previous records, and you finish in **1st** out of **${participants} players**, you will have **${ptsTotal} total ChP** and **${ptsMax} obtainable ChP**, with a new rank percentage of **${newRank}**`, msgObj, `1D00FC`);
 							break;
 						case 2:
 							console.log(`With no previous records, and ${handle.displayName} finishes in 2nd out of ${participants} players, their new rank percentage will be ${newRank}`);
-							ReplyManager.newReply(`Simulation`, `With no previous records, and you finish in **2nd** out of **${participants} players**, your new rank percentage will be **${newRank}**`, msgObj, `1D00FC`);
+							ReplyManager.newReply(`Simulation`, `With no previous records, and you finish in **2nd** out of **${participants} players**, you will have **${ptsTotal} total ChP** and **${ptsMax} obtainable ChP**, with a new rank percentage of **${newRank}**`, msgObj, `1D00FC`);
 							break;
 						case 3:
 							console.log(`With no previous records, and ${handle.displayName} finishes in 3rd out of ${participants} players, their new rank percentage will be ${newRank}`);
-							ReplyManager.newReply(`Simulation`, `With no previous records, and you finish in **3rd** out of **${participants} players**, your new rank percentage will be **${newRank}**`, msgObj, `1D00FC`);
+							ReplyManager.newReply(`Simulation`, `With no previous records, and you finish in **3rd** out of **${participants} players**, you will have **${ptsTotal} total ChP** and **${ptsMax} obtainable ChP**, with a new rank percentage of **${newRank}**`, msgObj, `1D00FC`);
 							break;
 						default:
 							console.log(`With no previous records, and ${handle.displayName} finishes in ${place}th out of ${participants} players, their new rank percentage will be ${newRank}`);
-							ReplyManager.newReply(`Simulation`, `With no previous records, and you finish in **${place}th** out of **${participants} players**, your new rank percentage will be **${newRank}**`, msgObj, `1D00FC`);
+							ReplyManager.newReply(`Simulation`, `With no previous records, and you finish in **${place}th** out of **${participants} players**, you will have **${ptsTotal} total ChP** and **${ptsMax} obtainable ChP**, with a new rank percentage of **${newRank}**`, msgObj, `1D00FC`);
 							break;
 					}
 				}

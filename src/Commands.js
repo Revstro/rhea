@@ -87,17 +87,41 @@ this.cmd = function(msg, args) {
 			}
 			break;
 
-		// !standings
+		// !standings [season]
 		case 'standings':
+			if(args.length === 2) {
+				RedisManager.getStandings(args[1], 0, 49, msg);
+			}
+			else {
+				RedisManager.getStandings("UseCurrent", 0, 49, msg)
+			}
 			break;
 
 		// !stats [handle] [season]
 		case 'stats':
 			if(args.length === 3) {
-
+				let member = msg.mentions.members.first();
+				if(member) {
+					RedisManager.getPlayerStats(member, args[2], msg);
+				}
+				else {
+					embed.setTitle(`Error`);
+					embed.setDescription(`Sorry ${msg.member}, but I can't find that person`);
+					embed.setColor(`D43E33`);
+					msg.channel.send(embed);
+				}
 			}
 			else if(args.length === 2) {
-
+				let member = msg.mentions.members.first();
+				if(member) {
+					RedisManager.getPlayerStats(member, "UseCurrent", msg);
+				}
+				else {
+					embed.setTitle(`Error`);
+					embed.setDescription(`Sorry ${msg.member}, but I can't find that person`);
+					embed.setColor(`D43E33`);
+					msg.channel.send(embed);
+				}
 			}
 			else {
 				embed.setTitle('Error');
