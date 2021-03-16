@@ -3,6 +3,7 @@ const Discord = require('discord.js');
 const Package = require('../package.json');
 const Settings = require('../private/settings.json');
 const RedisManager = require('./RedisManager.js');
+const FunThings = require('./FunThings.js');
 
 const attachment = new Discord.MessageAttachment('./img/orl_logo.png', 'orl_logo.png');
 
@@ -35,7 +36,7 @@ this.cmd = function(msg, args) {
 		// !help
 		case 'help':
 			embed.setTitle('Help Menu');
-			embed.setDescription('`!github` - Links to the GitHub repository for this bot\n`!help` - Displays this menu\n`!maps` - Displays the playable maps in the league\n`!standings` - Gets the current standings of the season\n`!stats [discord handle]` - Gets the current season stats of the pinged player\n`!leaderboard [map] [start (default: 1)] [end (default: 10)]` - Gets the time trial leaderboard of the map\n`!submit [map] [video link]` - Submits a time trial record for manual review');
+			embed.setDescription('**Regular**\n`!github` - Links to the GitHub repository for this bot\n`!help` - Displays this menu\n`!maps` - Displays the playable maps in the league\n`!season` - Displays the current season\n\n**Race Records**\n`!history [handle] [start (1)] [end (10)] [season (current season)]` - Gets the recent games of a player\n`!simulate [place] [participants]` - Simulates a game and its affect on your rank\n`!standings [season (current season)]` - Gets the standings of the current or a specific season\n`!stats [handle] [season (current season)]` - Gets the stats of a player in the current or a specific season\n\n**Time Trials**\n`!leaderboard [map] [start (1)] [end (10)]` - Gets the time trial leaderboard of a map\n`!submit [map] [link] - Submits a time trial record for manual review`');
 			embed.setColor('00E3FF');
 			msg.channel.send(embed);
 			break;
@@ -50,25 +51,58 @@ this.cmd = function(msg, args) {
 		case 'history':
 			if(args.length === 5) {
 				let member = msg.mentions.members.first();
-
-				RedisManager.getRaceHistory(member, args[2], parseInt(args[3]) - 1, parseInt(args[4]) - 1, msg);
+				if(member) {
+					RedisManager.getRaceHistory(member, args[4], parseInt(args[2]) - 1, parseInt(args[3]) - 1, msg);
+				}
+				else {
+					embed.setTitle(`Error`);
+					embed.setDescription(`Sorry ${msg.member}, but I can't find that person`);
+					embed.setColor(`D43E33`);
+					msg.channel.send(embed);
+				}
+			}
+			else if(args.length === 4) {
+				let member = msg.mentions.members.first();
+				if(member) {
+					RedisManager.getRaceHistory(member, 'UseCurrent', parseInt(args[2]) - 1, parseInt(args[3]) - 1, msg);
+				}
+				else {
+					embed.setTitle(`Error`);
+					embed.setDescription(`Sorry ${msg.member}, but I can't find that person`);
+					embed.setColor(`D43E33`);
+					msg.channel.send(embed);
+				}
 			}
 			else if(args.length === 3) {
 				let member = msg.mentions.members.first();
-
-				RedisManager.getRaceHistory(member, args[2], 0, 9, msg);
+				if(member) {
+					RedisManager.getRaceHistory(member, args[2], 0, 9, msg);
+				}
+				else {
+					embed.setTitle(`Error`);
+					embed.setDescription(`Sorry ${msg.member}, but I can't find that person`);
+					embed.setColor(`D43E33`);
+					msg.channel.send(embed);
+				}
 			}
 			else if(args.length === 2) {
 				let member = msg.mentions.members.first();
-
-				RedisManager.getRaceHistory(member, 'UseCurrent', 0, 9, msg);
+				if(member) {
+					RedisManager.getRaceHistory(member, 'UseCurrent', 0, 9, msg);
+				}
+				else {
+					embed.setTitle(`Error`);
+					embed.setDescription(`Sorry ${msg.member}, but I can't find that person`);
+					embed.setColor(`D43E33`);
+					msg.channel.send(embed);
+				}
 			}
 			else if(args.length === 1) {
 				RedisManager.getRaceHistory(msg.member, 'UseCurrent', 0, 9, msg);
 			}
 			else {
 				embed.setTitle('Error');
-                                embed.setDescription(`Sorry ${msg.member}, but you are missing arguments\nUsage: \`!history [handle] [season (default is the current season)] [start (default is 1)] [end (default is 10)]\``);
+                                embed.setDescription(`Sorry ${msg.member}, but you are missing arguments\nUsage: \`!history [handle] [start (default is 1)] [end (default is 10)] [season (default is the current season)]\`\nOR\n\`!history [handle] [season (default is the current season)]\``);
                                 embed.setColor('D43E33');
                                 msg.channel.send(embed);
 			}
@@ -152,12 +186,7 @@ this.cmd = function(msg, args) {
 		case 'submit':
 			if(args.length === 3) {
 				if(args[1].indexOf('https') === -1 && args[2].indexOf('https') != -1) {
-					embed.setTitle('Submission');
-					embed.setDescription('Successfully sent time trial submission... Your submission will be manually approved in due time...');
-					embed.setColor('8202F9');
-					msg.channel.send(embed);
-
-					msg.guild.channels.cache.get(Settings.channel_tts).send(`New time trial from ${msg.member} for **${args[1]}**:\n${args[2]}`);
+					RedisManager.filter(args[1], args[2], msg);
 				}
 				else {
 					embed.setTitle('Error');
@@ -176,10 +205,36 @@ this.cmd = function(msg, args) {
 
 		// Fun Commands
 		// !angery
+		// Oh now you've done it...
 		case 'angery':
+			msg.channel.send('<:rh_angery:732424672553074760>');
+			break;
+
+		// !linux
+		// Rhea gives you "good" linux advice
+		case 'linux':
+			embed.setTitle(`Linux Advice`);
+			embed.setDescription(FunThings.linuxAdvice());
+			embed.setColor(`00E3FF`);
+			msg.channel.send(embed);
 			break;
 
 		// Admin Commands
+		case 'adminhelp':
+			if(msg.member.roles.cache.has(Settings.role_administrator)) {
+				embed.setTitle(`Admin Help Menu`);
+				embed.setDescription('**Debug Commands**\n`!echo [arguments]` - Tests the console output\n`!redistest` - Tests the redis database\n`!save` - Saves the database\n\n**Race Records**\n`!addstats [handle] [place] [participants] [map]` - Adds a race record to the player stats\n\n**Time Trials**\n`!blacklist [handle] [reason] - Blacklists a player from the time trial records`\n`!addmap [map] [author]` - Adds a map to the map database\n`!addrecord [name] [map] [time] [video link]` - Adds a time trial record to the database\n`!pardon [handle]` - Pardons a player from the blacklist');
+				embed.setColor(`00E3FF`);
+				msg.channel.send(embed);
+			}
+			else {
+				embed.setTitle(`Error`);
+				embed.setDescription(`Sorry ${msg.member}, but you aren't permitted to use this command`);
+				embed.setColor(`D43E33`);
+				msg.channel.send(embed);
+			}
+			break;
+
 		// !echo [arguments]
 		// Tests console output
 		case 'echo':
@@ -253,7 +308,7 @@ this.cmd = function(msg, args) {
 		// !addrecord [name] [map] [total time] [video]
 		// Adds a time trial record to the database
 		case 'addrecord':
-			if(msg.member.roles.cache.has(Settings.role_administrator)) {
+			if(msg.member.roles.cache.has(Settings.role_administrator) || msg.member.roles.cache.has(Settings.role_ttrmoderator)) {
 				if(args.length === 5) {
 					RedisManager.newTimeTrialRecord(args[1], args[3], args[2], args[4], msg);
 
@@ -282,13 +337,20 @@ this.cmd = function(msg, args) {
 		case 'addstats':
 			if(msg.member.roles.cache.has(Settings.role_administrator)) {
 				if(args.length === 5) {
-					let handle = msg.mentions.members.first();
-
-					RedisManager.addStats(handle, args[2], args[3], args[4], msg);
+					let member = msg.mentions.members.first();
+					if(member) {
+						RedisManager.addStats(member, args[2], args[3], args[4], msg);
+					}
+					else {
+						embed.setTitle(`Error`);
+						embed.setDescription(`Sorry ${msg.member}, but I can't find that person`);
+						embed.setColor(`D43E33`);
+						msg.channel.send(embed);
+					}
 				}
 				else {
 					embed.setTitle('Error');
-					embed.setDescription(`Sorry ${msg.member}, but you are missing some arguments\nUsage\`!addstats [discord handle] [place] [participants] [map]\``);
+					embed.setDescription(`Sorry ${msg.member}, but you are missing some arguments\nUsage: \`!addstats [handle] [place] [participants] [map]\``);
 					embed.setColor('D43E33');
 					msg.channel.send(embed);
 				}
@@ -297,6 +359,82 @@ this.cmd = function(msg, args) {
 				embed.setTitle('Error');
 				embed.setDescription(`Sorry ${msg.member}, but you aren't permitted to use this command`);
 				embed.setColor('D43E33');
+				msg.channel.send(embed);
+			}
+			break;
+
+		// !blacklist [handle] [reason]
+		// Blacklists a player from submitting time trials
+		case 'blacklist':
+			if(msg.member.roles.cache.has(Settings.role_administrator)) {
+				if(args.length === 3) {
+					let member = msg.mentions.members.first();
+					if(member) {
+						RedisManager.blacklistPlayer(member, args[2], msg);
+					}
+					else {
+						embed.setTitle(`Error`);
+						embed.setDescription(`Sorry ${msg.member}, but I can't find that person`);
+						embed.setColor(`D43E33`);
+						msg.channel.send(embed);
+					}
+				}
+				else {
+					embed.setTitle(`Error`);
+					embed.setDescription(`Sorry ${msg.member}, but you are missing some arguments\nUsage: \`!blacklist [handle] [reason]\``);
+					embed.setColor(`D43E33`);
+					msg.channel.send(embed);
+				}
+			}
+			else {
+				embed.setTitle(`Error`);
+				embed.setDescription(`Sorry ${msg.member}, but you aren't permitted to use this command`);
+				embed.setColor(`D43E33`);
+				msg.channel.send(embed);
+			}
+			break;
+
+		// !pardon [handle]
+		// Pardons a player from a blacklist
+		case 'pardon':
+			if(msg.member.roles.cache.has(Settings.role_administrator)) {
+				if(args.length === 2) {
+					let member = msg.mentions.members.first();
+					if(member) {
+						RedisManager.pardonPlayer(member, msg);
+					}
+					else {
+						embed.setTitle(`Error`);
+						embed.setDescription(`Sorry ${msg.member}, but I can't find that person`);
+						embed.setColor(`D43E33`);
+						msg.channel.send(embed);
+					}
+				}
+				else {
+					embed.setTitle(`Error`);
+					embed.setDescription(`Sorry ${msg.member}, but you are missing some arguments\nUsage: \`!pardon [handle]\``);
+					embed.setColor(`D43E33`);
+					msg.channel.send(embed);
+				}
+			}
+			else {
+				embed.setTitle(`Error`);
+				embed.setDescription(`Sorry ${msg.member}, but you aren't permitted to use this command`);
+				embed.setColor(`D43E33`);
+				msg.channel.send(embed);
+			}
+			break;
+
+		// !save
+		// Saves the database
+		case 'save':
+			if(msg.member.roles.cache.has(Settings.role_administrator)) {
+				RedisManager.save(msg);
+			}
+			else {
+				embed.setTitle(`Error`);
+				embed.setDescription(`Sorry ${msg.member}, but you aren't permitted to use this command`);
+				embed.setColor(`D43E33`);
 				msg.channel.send(embed);
 			}
 			break;

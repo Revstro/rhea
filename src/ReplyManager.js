@@ -11,8 +11,23 @@ embed.attachFiles(attachment);
 this.newReply = function(title, msg, msgObj, color) {
 	embed.setTimestamp(Date.now());
 	embed.setTitle(title);
-	embed.setDescription(msg)
+	embed.setDescription(msg);
 	embed.setColor(color);
 
 	msgObj.channel.send(embed);
+}
+
+this.newReplySpecific = function(title, msg, msgObj, color, chan) {
+	embed.setTimestamp(Date.now());
+	embed.setTitle(title);
+	embed.setDescription(msg);
+	embed.setColor(color);
+
+	let dest = msgObj.guild.channels.cache.get(chan);
+	if(dest) {
+		dest.send(embed);
+	}
+	else {
+		console.log(`ERROR: Unable to send reply to ${chan}`);
+	}
 }

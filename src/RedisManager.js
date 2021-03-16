@@ -4,6 +4,7 @@ const redis = new Redis();
 
 const ReplyManager = require('./ReplyManager.js');
 const RankManager = require('./RankManager.js');
+const Settings = require('../private/settings.json');
 
 // Misc
 this.testSet = function() {
@@ -19,6 +20,13 @@ this.getSeason = function(msgObj) {
 		console.log(`Current season: ${result}`);
 
 		ReplyManager.newReply(`Current Season`, `It is currently season ${result} of the Overload Racing League`, msgObj, `00E3FF`);
+	});
+}
+
+this.save = function(msgObj) {
+	redis.save().then(function(result) {
+		console.log(`Saving database... Result: ${result}`);
+		ReplyManager.newReply(`Database`, `Response: ${result}`, msgObj, `00E3FF`);
 	});
 }
 
@@ -533,4 +541,44 @@ this.getSimulation = function(handle, place, participants, msgObj) {
 	});
 
 	return 0;
+}
+
+// Blacklist Records
+/** Adds a user to the blacklist records
+ * @param {Discord.GuildMember} handle The person being blacklisted
+ * @param {string} reason The reason for being blacklisted
+ * @param {Discord.Message} msgObj Discord message object
+*/
+this.blacklistPlayer = function(handle, reason, msgObj) {
+	redis.set(`blacklist:${handle.id}`, reason);
+
+	console.log(`Blacklisted ${handle.displayName} (${handle.id})\nBy: ${msgObj.member.displayName}\nReason: ${reason}`);
+	ReplyManager.newReply(`Blacklist`, `Blacklisted ${handle} (${handle.id})\n\nReason\n\`${reason}\``, msgObj, `1a1a1a`);
+}
+
+this.pardonPlayer = function(handle, msgObj) {
+	redis.del(`blacklist:${handle.id}`).then(function(result) {
+		if(result) {
+			console.log(`Pardoned ${handle.displayName} (${handle.id})\nBy: ${msgObj.member.displayName}`);
+			ReplyManager.newReply(`Pardon`, `Pardoned ${handle} (${handle.id})`, msgObj, `d3d3d3`);
+		}
+		else {
+			console.log(`Pardoned ${handle.displayName} (${handle.id})... But they aren't blacklisted\nBy ${msgObj.member.displayName}`);
+			ReplyManager.newReply(`Pardon`, `${handle} is not blacklisted`, msgObj, `d3d3d3`);
+		}
+	});
+}
+
+this.filter = function(map, link, msgObj) {
+	redis.get(`blacklist:${msgObj.member.id}`).then(function(result) {
+		if(result) {
+			console.log(`${msgObj.member.displayName} (${msgObj.member.id}) sent in a time trial submission, but they are blacklisted`);
+			ReplyManager.newReply(`Unable To Send Submission`, `Sorry ${msgObj.member}, but you are blacklisted from the time trial records\n\nReason\n\`${result}\``, msgObj, `D43E33`);
+		}
+		else {
+			console.log(`Processing time trial submission from ${msgObj.member.displayName}\nMap: ${map}\nLink: ${link}`);
+			ReplyManager.newReply(`Submission`, `Your submission has been sent and will be manually reviewed`, msgObj, `8202F9`);
+			ReplyManager.newReplySpecific(`Submission`, `New submission from ${msgObj.member}\nMap: ${map}\nLink: ${link}`, msgObj, `8202F9`, Settings.channel_tts);
+		}
+	});
 }
