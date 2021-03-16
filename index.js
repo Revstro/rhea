@@ -25,21 +25,29 @@ client.on('message', msg =>{
 	if(msg.content.substring(0, 1) === '!') {
 		switch(args[0]) {
 			case 'shutdown':
-				console.log(`Shutdown in progress... Started by ${msg.member.displayName}`);
-
-				embed.setTimestamp(Date.now());
-
-				embed.setTitle('Notice');
-				embed.setDescription(`Shutdown in progress... Started by ${msg.member}`);
-				embed.setColor('1a1a1a');
-				client.channels.cache.get(Settings.channel_rheastatus).send(embed);
-
 				if(msg.member.roles.cache.has(Settings.role_administrator)) {
-					setTimeout(function() {
-						client.destroy();
-						console.log(`Shutdown complete... Have a nice day`);
-						process.exit();
-					}, 10000)
+					console.log(`Shutdown in progress... Started by ${msg.member.displayName}`);
+
+					embed.setTimestamp(Date.now());
+
+					embed.setTitle('Notice');
+					embed.setDescription(`Shutdown in progress... Started by ${msg.member}`);
+					embed.setColor('1a1a1a');
+					client.channels.cache.get(Settings.channel_rheastatus).send(embed);
+
+					if(msg.member.roles.cache.has(Settings.role_administrator)) {
+						setTimeout(function() {
+							client.destroy();
+							console.log(`Shutdown complete... Have a nice day`);
+							process.exit();
+						}, 10000)
+					}
+				}
+				else {
+					embed.setTitle(`Error`);
+					embed.setDescription(`sorry ${msg.member}, but you aren't permitted to use this command`);
+					embed.setColor(`D43E33`);
+					msg.channel.send(embed);
 				}
 				break;
 			default:
