@@ -379,7 +379,7 @@ this.getStandings = function(season, start, end, msgObj) {
 	if(season === "UseCurrent") {
 		redis.get('season').then(function(result0) {
 			if(result0 !== null) {
-				redis.zrange(`standings-${result0}`, start, end).then(function(result) {
+				redis.zrevrange(`standings-${result0}`, start, end).then(function(result) {
 					if(result.length > 0) {
 						let standlist = `1) <@!${result[0]}>`;
 						for(i = 1; i < result.length; i++) {
