@@ -320,7 +320,7 @@ this.getRaceHistory = function(handle, season, start, end, msgObj) {
 			if(result0 !== null) {
 				redis.lrange(`${handle.id}-${result0}:race-history`, start, end).then(function(result1) {
 					if(result1.length > 0) {
-						let historylist = `**Ordered from most to least recent**\n\n${result1[0]}`;
+						let historylist = `**Ordered from most to least recent**\n${result1[0]}`;
 
 						for(i = 1; i < result1.length; i++) {
 							historylist = `${historylist}\n${result1[i]}`;

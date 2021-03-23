@@ -49,73 +49,89 @@ this.cmd = function(msg, args) {
 		// Race Record Commands
 		// !history [handle] [season] [start] [end]
 		case 'history':
-			if(args.length === 5) {
-				let member = msg.mentions.members.first();
-				if(member) {
-					RedisManager.getRaceHistory(member, args[4], parseInt(args[2]) - 1, parseInt(args[3]) - 1, msg);
+			if(msg.channel.type != "dm") {
+				if(args.length === 5) {
+					let member = msg.mentions.members.first();
+					if(member) {
+						RedisManager.getRaceHistory(member, args[4], parseInt(args[2]) - 1, parseInt(args[3]) - 1, msg);
+					}
+					else {
+						embed.setTitle(`Error`);
+						embed.setDescription(`Sorry ${msg.member}, but I can't find that person`);
+						embed.setColor(`D43E33`);
+						msg.channel.send(embed);
+					}
+				}
+				else if(args.length === 4) {
+					let member = msg.mentions.members.first();
+					if(member) {
+						RedisManager.getRaceHistory(member, 'UseCurrent', parseInt(args[2]) - 1, parseInt(args[3]) - 1, msg);
+					}
+					else {
+						embed.setTitle(`Error`);
+						embed.setDescription(`Sorry ${msg.member}, but I can't find that person`);
+						embed.setColor(`D43E33`);
+						msg.channel.send(embed);
+					}
+				}
+				else if(args.length === 3) {
+					let member = msg.mentions.members.first();
+					if(member) {
+						RedisManager.getRaceHistory(member, args[2], 0, 9, msg);
+					}
+					else {
+						embed.setTitle(`Error`);
+						embed.setDescription(`Sorry ${msg.member}, but I can't find that person`);
+						embed.setColor(`D43E33`);
+						msg.channel.send(embed);
+					}
+				}
+				else if(args.length === 2) {
+					let member = msg.mentions.members.first();
+					if(member) {
+						RedisManager.getRaceHistory(member, 'UseCurrent', 0, 9, msg);
+					}
+					else {
+						embed.setTitle(`Error`);
+						embed.setDescription(`Sorry ${msg.member}, but I can't find that person`);
+						embed.setColor(`D43E33`);
+						msg.channel.send(embed);
+					}
+				}
+				else if(args.length === 1) {
+					RedisManager.getRaceHistory(msg.member, 'UseCurrent', 0, 9, msg);
 				}
 				else {
-					embed.setTitle(`Error`);
-					embed.setDescription(`Sorry ${msg.member}, but I can't find that person`);
-					embed.setColor(`D43E33`);
+					embed.setTitle('Error');
+					embed.setDescription(`Sorry ${msg.member}, but you are missing arguments\nUsage: \`!history [handle] [start (default is 1)] [end (default is 10)] [season (default is the current season)]\`\nOR\n\`!history [handle] [season (default is the current season)]\``);
+					embed.setColor('D43E33');
 					msg.channel.send(embed);
 				}
-			}
-			else if(args.length === 4) {
-				let member = msg.mentions.members.first();
-				if(member) {
-					RedisManager.getRaceHistory(member, 'UseCurrent', parseInt(args[2]) - 1, parseInt(args[3]) - 1, msg);
-				}
-				else {
-					embed.setTitle(`Error`);
-					embed.setDescription(`Sorry ${msg.member}, but I can't find that person`);
-					embed.setColor(`D43E33`);
-					msg.channel.send(embed);
-				}
-			}
-			else if(args.length === 3) {
-				let member = msg.mentions.members.first();
-				if(member) {
-					RedisManager.getRaceHistory(member, args[2], 0, 9, msg);
-				}
-				else {
-					embed.setTitle(`Error`);
-					embed.setDescription(`Sorry ${msg.member}, but I can't find that person`);
-					embed.setColor(`D43E33`);
-					msg.channel.send(embed);
-				}
-			}
-			else if(args.length === 2) {
-				let member = msg.mentions.members.first();
-				if(member) {
-					RedisManager.getRaceHistory(member, 'UseCurrent', 0, 9, msg);
-				}
-				else {
-					embed.setTitle(`Error`);
-					embed.setDescription(`Sorry ${msg.member}, but I can't find that person`);
-					embed.setColor(`D43E33`);
-					msg.channel.send(embed);
-				}
-			}
-			else if(args.length === 1) {
-				RedisManager.getRaceHistory(msg.member, 'UseCurrent', 0, 9, msg);
 			}
 			else {
-				embed.setTitle('Error');
-                                embed.setDescription(`Sorry ${msg.member}, but you are missing arguments\nUsage: \`!history [handle] [start (default is 1)] [end (default is 10)] [season (default is the current season)]\`\nOR\n\`!history [handle] [season (default is the current season)]\``);
-                                embed.setColor('D43E33');
-                                msg.channel.send(embed);
+				embed.setTitle(`Error`);
+				embed.setDescription(`Sorry, but that command cannot be used in a DM\nPlease use it on the server`);
+				embed.setColor(`D43E33`);
+				msg.channel.send(embed);
 			}
 			break;
 
 		// !simulate [place] [participants]
 		case 'simulate':
-			if(args.length === 3) {
-				RedisManager.getSimulation(msg.member, args[1], args[2], msg);
+			if(msg.channel.type != "dm") {
+				if(args.length === 3) {
+					RedisManager.getSimulation(msg.member, args[1], args[2], msg);
+				}
+				else {
+					embed.setTitle(`Error`);
+					embed.setDescription(`Sorry ${msg.member}, but you are missing arguments\nUsage: \`!simulate [place] [participants]\``);
+					embed.setColor(`D43E33`);
+					msg.channel.send(embed);
+				}
 			}
 			else {
 				embed.setTitle(`Error`);
-				embed.setDescription(`Sorry ${msg.member}, but you are missing arguments\nUsage: \`!simulate [place] [participants]\``);
+				embed.setDescription(`Sorry, but that command cannot be used in a DM\nPlease use it on the server`);
 				embed.setColor(`D43E33`);
 				msg.channel.send(embed);
 			}
@@ -133,35 +149,46 @@ this.cmd = function(msg, args) {
 
 		// !stats [handle] [season]
 		case 'stats':
-			if(args.length === 3) {
-				let member = msg.mentions.members.first();
-				if(member) {
-					RedisManager.getPlayerStats(member, args[2], msg);
+			if(msg.channel.type != "dm") {
+				if(args.length === 3) {
+					let member = msg.mentions.members.first();
+					if(member) {
+						RedisManager.getPlayerStats(member, args[2], msg);
+					}
+					else {
+						embed.setTitle(`Error`);
+						embed.setDescription(`Sorry ${msg.member}, but I can't find that person`);
+						embed.setColor(`D43E33`);
+						msg.channel.send(embed);
+					}
+				}
+				else if(args.length === 2) {
+					let member = msg.mentions.members.first();
+					if(member) {
+						RedisManager.getPlayerStats(member, "UseCurrent", msg);
+					}
+					else {
+						embed.setTitle(`Error`);
+						embed.setDescription(`Sorry ${msg.member}, but I can't find that person`);
+						embed.setColor(`D43E33`);
+						msg.channel.send(embed);
+					}
+				}
+				else if(args.length === 1) {
+					RedisManager.getPlayerStats(msg.member, "UseCurrent", msg);
 				}
 				else {
-					embed.setTitle(`Error`);
-					embed.setDescription(`Sorry ${msg.member}, but I can't find that person`);
-					embed.setColor(`D43E33`);
-					msg.channel.send(embed);
-				}
-			}
-			else if(args.length === 2) {
-				let member = msg.mentions.members.first();
-				if(member) {
-					RedisManager.getPlayerStats(member, "UseCurrent", msg);
-				}
-				else {
-					embed.setTitle(`Error`);
-					embed.setDescription(`Sorry ${msg.member}, but I can't find that person`);
-					embed.setColor(`D43E33`);
-					msg.channel.send(embed);
+					embed.setTitle('Error');
+					embed.setDescription(`Sorry ${msg.member}, but you are missing arguments\nUsage: \`!stats [handle] [season (default is the current season)]\``);
+	                                embed.setColor('D43E33');
+	                                msg.channel.send(embed);
 				}
 			}
 			else {
-				embed.setTitle('Error');
-                                embed.setDescription(`Sorry ${msg.member}, but you are missing arguments\nUsage: \`!stats [handle] [season (default is the current season)]\``);
-                                embed.setColor('D43E33');
-                                msg.channel.send(embed);
+				embed.setTitle(`Error`);
+				embed.setDescription(`Sorry, but that command cannot be used in a DM\nPlease use it on the server`);
+				embed.setColor(`D43E33`);
+				msg.channel.send(embed);
 			}
 			break;
 
@@ -184,21 +211,29 @@ this.cmd = function(msg, args) {
 
 		// !submit [map name] [video link]
 		case 'submit':
-			if(args.length === 3) {
-				if(args[1].indexOf('https') === -1 && args[2].indexOf('https') != -1) {
-					RedisManager.filter(args[1], args[2], msg);
+			if(msg.channel.type != "dm") {
+				if(args.length === 3) {
+					if(args[1].indexOf('https') === -1 && args[2].indexOf('https') != -1) {
+						RedisManager.filter(args[1], args[2], msg);
+					}
+					else {
+						embed.setTitle('Error');
+						embed.setDescription(`Sorry ${msg.member}, but you've formatted the command wrong (map name first, video link second)`);
+						embed.setColor('D43E33');
+						msg.channel.send(embed);
+					}
 				}
 				else {
 					embed.setTitle('Error');
-					embed.setDescription(`Sorry ${msg.member}, but you've formatted the command wrong (map name first, video link second)`);
+					embed.setDescription(`Sorry ${msg.member}, but you are missing some arguments\nUsage: \`!submit [map] [video link]\``);
 					embed.setColor('D43E33');
 					msg.channel.send(embed);
 				}
 			}
 			else {
-				embed.setTitle('Error');
-				embed.setDescription(`Sorry ${msg.member}, but you are missing some arguments\nUsage: \`!submit [map] [video link]\``);
-				embed.setColor('D43E33');
+				embed.setTitle(`Error`);
+				embed.setDescription(`Sorry, but that command cannot be used in a DM\nPlease use it on the server`);
+				embed.setColor(`D43E33`);
 				msg.channel.send(embed);
 			}
 			break;
