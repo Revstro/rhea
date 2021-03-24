@@ -36,7 +36,7 @@ this.cmd = function(msg, args) {
 		// !help
 		case 'help':
 			embed.setTitle('Help Menu');
-			embed.setDescription('**Regular**\n`!github` - Links to the GitHub repository for this bot\n`!help` - Displays this menu\n`!maps` - Displays the playable maps in the league\n`!season` - Displays the current season\n\n**Race Records**\n`!history [handle] [start (1)] [end (10)] [season (current season)]` - Gets the recent games of a player\n`!simulate [place] [participants]` - Simulates a game and its affect on your rank\n`!standings [season (current season)]` - Gets the standings of the current or a specific season\n`!stats [handle] [season (current season)]` - Gets the stats of a player in the current or a specific season\n\n**Time Trials**\n`!leaderboard [map] [start (1)] [end (10)]` - Gets the time trial leaderboard of a map\n`!submit [map] [link] - Submits a time trial record for manual review`');
+			embed.setDescription('**Regular**\n`!github` - Links to the GitHub repository for this bot\n`!help` - Displays this menu\n`!map [map name]` - Displays details about [map name]\n`!maps` - Displays the playable maps in the league\n`!season` - Displays the current season\n\n**Race Records**\n`!history [handle] [start (1)] [end (10)] [season (current season)]` - Gets the recent games of a player\n`!simulate [place] [participants]` - Simulates a game and its affect on your rank\n`!standings [season (current season)]` - Gets the standings of the current or a specific season\n`!stats [handle] [season (current season)]` - Gets the stats of a player in the current or a specific season\n\n**Time Trials**\n`!leaderboard [map] [start (1)] [end (10)]` - Gets the time trial leaderboard of a map\n`!submit [map] [link]` - Submits a time trial record for manual review`');
 			embed.setColor('00E3FF');
 			msg.channel.send(embed);
 			break;
@@ -44,6 +44,19 @@ this.cmd = function(msg, args) {
 		// !maps
 		case 'maps':
 			RedisManager.getMaps(msg);
+			break;
+
+		// !map [map name]
+		case 'map':
+			if(args.length === 2) {
+				RedisManager.getMapDetail(args[1], msg);
+			}
+			else {
+				embed.setTitle(`Error`);
+				embed.setDescription(`Sorry ${msg.member}, but you are missing arguments\nUsage: \`!map [map name]\``);
+				embed.setColor(`D43E33`);
+				msg.channel.send(embed);
+			}
 			break;
 
 		// Race Record Commands
@@ -258,7 +271,7 @@ this.cmd = function(msg, args) {
 		case 'adminhelp':
 			if(msg.member.roles.cache.has(Settings.role_administrator)) {
 				embed.setTitle(`Admin Help Menu`);
-				embed.setDescription('**Debug Commands**\n`!echo [arguments]` - Tests the console output\n`!redistest` - Tests the redis database\n`!save` - Saves the database\n\n**Race Records**\n`!addstats [handle] [place] [participants] [map]` - Adds a race record to the player stats\n\n**Time Trials**\n`!blacklist [handle] [reason] - Blacklists a player from the time trial records`\n`!addmap [map] [author]` - Adds a map to the map database\n`!addrecord [name] [map] [time] [video link]` - Adds a time trial record to the database\n`!pardon [handle]` - Pardons a player from the blacklist');
+				embed.setDescription('**Debug Commands**\n`!echo [arguments]` - Tests the console output\n`!redistest` - Tests the redis database\n`!save` - Saves the database\n\n**Race Records**\n`!addstats [handle] [place] [participants] [map]` - Adds a race record to the player stats\n\n**Time Trials**\n`!blacklist [handle] [reason]` - Blacklists a player from the time trial records\n`!addmap [map] [author]` - Adds a map to the map database\n`!addrecord [name] [map] [time] [video link]` - Adds a time trial record to the database\n`!pardon [handle]` - Pardons a player from the blacklist');
 				embed.setColor(`00E3FF`);
 				msg.channel.send(embed);
 			}
@@ -327,7 +340,7 @@ this.cmd = function(msg, args) {
 				}
 				else {
 					embed.setTitle('Error');
-					embed.setDescription(`Sorry ${msg.member}, but you are missing some arguments\nUsage:\`!addmap [map] [author]\``);
+					embed.setDescription(`Sorry ${msg.member}, but you are missing some arguments\nUsage: \`!addmap [map] [author]\``);
 					embed.setColor('D43E33');
 					msg.channel.send(embed);
 				}
@@ -354,7 +367,7 @@ this.cmd = function(msg, args) {
 				}
 				else {
 					embed.setTitle('Error');
-					embed.setDescription(`Sorry ${msg.member}, but you are missing some arguments\nUsage\`!addrecord [name] [map] [total time] [video]\``);
+					embed.setDescription(`Sorry ${msg.member}, but you are missing some arguments\nUsage: \`!addrecord [name] [map] [total time] [video]\``);
 					embed.setColor('D43E33');
 					msg.channel.send(embed);
 				}
@@ -465,6 +478,28 @@ this.cmd = function(msg, args) {
 		case 'save':
 			if(msg.member.roles.cache.has(Settings.role_administrator)) {
 				RedisManager.save(msg);
+			}
+			else {
+				embed.setTitle(`Error`);
+				embed.setDescription(`Sorry ${msg.member}, but you aren't permitted to use this command`);
+				embed.setColor(`D43E33`);
+				msg.channel.send(embed);
+			}
+			break;
+
+		// !setperfectlap [map name] [time]
+		// Sets the perfect lap time for a map
+		case `setperfectlap`:
+			if(msg.member.roles.cache.has(Settings.role_administrator)) {
+				if(args.length === 3) {
+					RedisManager.setPerfectLap(args[1], args[2], msg);
+				}
+				else {
+					embed.setTitle(`Error`);
+					embed.setDescription(`Sorry ${msg.member}, but you are missing arguments\nUsage: \`!setperfectlap [map] [time]\``);
+					embed.setColor(`D43E33`);
+					msg.channel.send(embed);
+				}
 			}
 			else {
 				embed.setTitle(`Error`);

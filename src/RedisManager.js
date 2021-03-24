@@ -30,9 +30,11 @@ this.save = function(msgObj) {
 	});
 }
 
-// Map List
+// Maps
 this.newMap = function(map, author) {
-	redis.rpush('maps', `${map} / Created by: ${author}`);
+	redis.rpush('maps', `${map}`);
+	redis.set(`map-${map}:author`, `${author}`);
+	redis.set(`map-${map}:perfect-lap`, 'Unknown');
 }
 
 this.getMaps = function(msgObj) {
@@ -52,6 +54,50 @@ this.getMaps = function(msgObj) {
 		else {
 			console.log(`ERROR: Unable to obtain map list`);
 			ReplyManager.newReply('Error', `Sorry ${msgObj.member}, but there was a problem processing your request`, msgObj, 'D43E33');
+		}
+	});
+}
+
+this.getMapDetail = function(map, msgObj) {
+	redis.get(`map-${map}:author`).then(function(author) {
+		if(author) {
+			redis.get(`map-${map}:perfect-lap`).then(function(perfect_lap) {
+				redis.zrange(map, 0, 0).then(function(best_time) {
+					if(best_time.length > 0) {
+						console.log(`Details for ${map}:\nAuthor: ${author}\nPerfect Lap: ${perfect_lap}\nBest Time: ${best_time[0]}`);
+						ReplyManager.newReply(`Details of ${map}`, `Author: **${author}**\nPerfect Lap: **${perfect_lap}**\n\nBest Time\n**${best_time[0]}**`, msgObj, `FFB400`);
+					}
+					else {
+						console.log(`Details for ${map}:\nAuthor: ${author}\nPerfect Lap: ${perfect_lap}\nBest Time: None`);
+						ReplyManager.newReply(`Details of ${map}`, `Author: **${author}**\nPerfect Lap: **${perfect_lap}**\n\nBest Time\n**None**`, msgObj, `FFB400`);
+					}
+				});
+			});
+		}
+		else {
+			console.log(`ERROR: Unable to obtain details for ${map}`);
+			ReplyManager.newReply(`Error`, `Sorry ${msgObj.member}, but that map does not exist within the database`, msgObj, `D43E33`);
+		}
+	});
+}
+
+this.setPerfectLap = function(map, time, msgObj) {
+	redis.get(`map-${map}:author`).then(function(author) {
+		if(author) {
+			redis.set(`map-${map}:perfect-lap`, time).then(function(response) {
+				if(response) {
+					console.log(`Set the perfect lap for ${map} to ${time}`);
+					ReplyManager.newReply(`Perfect Lap for ${map}`, `Set the perfect lap to ${time}`, msgObj, `FFB400`);
+				}
+				else {
+					console.log(`ERROR: Could not access map-${map}:perfect-lap`);
+					ReplyManager.newReply(`Error`, `Sorry ${msgObj.member}, but there was an exception\n\`Unable to access map-${map}:perfect-lap\``, msgObj, `D43E33`);
+				}
+			});
+		}
+		else {
+			console.log(`ERROR: ${map} does not exist`);
+			ReplyManager.newReply(`Error`, `Sorry ${msgObj.member}, but there was an exception:\n\`Unable to access map-${map}:author\``, msgObj, `D43E33`);
 		}
 	});
 }
